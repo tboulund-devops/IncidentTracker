@@ -108,3 +108,5 @@ jobs:
       - name: Run Tests
         working-directory: server
         run: dotnet test -c Release --no-build
+        
+        # add coverage and mutant testing here
