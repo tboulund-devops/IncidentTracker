@@ -1,4 +1,4 @@
-# LibraryManager
+# IncidentTracker
 
 > [!NOTE]
 > Provide a project title in the heading above. Just below this note write a short description of the application you plan to build.
