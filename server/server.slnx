@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Solution Items/" />
+  <Project Path="api/api.csproj" />
+  <Project Path="application/application.csproj" />
+  <Project Path="core/core.csproj" />
+  <Project Path="data/data.csproj" />
+  <Project Path="test/test.csproj" />
+</Solution>
