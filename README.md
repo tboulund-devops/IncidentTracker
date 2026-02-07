@@ -1,23 +1,33 @@
-# LibraryManager
+# IncidentTracker
 
 > [!NOTE]
 > Provide a project title in the heading above. Just below this note write a short description of the application you plan to build.
 
-[...]
+We are working on an incident tracker, a software used to record, update and monitor events or issues as they happen. An admin creates and manages these incident reports and the users can view their status in real time.
 
 ## Tech-stack
 
 > [!NOTE]
 > Write a short description of your tech-stack here in terms of programming language(s) and database engine(s).
 
-[...]
+FullStack App that uses .NET Web API, REACT, and PostgreSQL.
+
+- Programming Languages:
+  - Backend: C# AspNetCore
+  - Frontend: TypeScript
+  - Database: SQL
+
+- Database Engines:
+  - Neon.com
+  - Redis
 
 ## Architecture
 
 > [!NOTE]
 > Write a short explanation of your planned architecture here.
 
-[...]
+Frontend is built with REACT (WIP) and backend is built with ASP.NET Web API (WIP)
+Data is stored in Neon.com in PostgreSQL (WIP)
 
 ## Feature plan
 
@@ -30,9 +40,9 @@
 *Kick-off week - no features to be planned here*
 
 ### Week 6
-**Feature 1:** [...]
+**Feature 1:** Set up project structure (Backend/Frontend).
 
-**Feature 2:** [...]
+**Feature 2:** Set up CI pipeline.
 
 ### Week 7
 *Winter vacation - nothing planned.*
