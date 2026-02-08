@@ -1,8 +1,14 @@
 <Solution>
   <Folder Name="/Solution Items/" />
-  <Project Path="api/api.csproj" />
-  <Project Path="application/application.csproj" />
-  <Project Path="core/core.csproj" />
-  <Project Path="data/data.csproj" />
-  <Project Path="test/test.csproj" />
+  <Folder Name="/Src/">
+    <Project Path="Src/Api/Api.csproj" />
+    <Project Path="Src/Application/Application.csproj" />
+    <Project Path="Src/Domain/Domain.csproj" />
+    <Project Path="Src/Infrastructure/Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/Integration/Integration.csproj" />
+    <Project Path="Tests/Unit/Unit.csproj" />
+  </Folder>
+
 </Solution>
