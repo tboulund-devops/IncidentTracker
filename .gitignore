@@ -110,6 +110,7 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+*.bin
 *.iobj
 *.pch
 *.pdb
@@ -117,6 +118,11 @@ StyleCopReport.xml
 *.pgc
 *.pgd
 *.rsp
+<<<<<<< HEAD
+=======
+# but not Directory.Build.rsp, as it configures directory-level build defaults
+!Directory.Build.rsp
+>>>>>>> e76b0d627c13fd737111930dae650ddef5f88ca1
 *.sbr
 *.tlb
 *.tli
@@ -451,10 +457,13 @@ autom4te.cache/
 tarballs/
 test-results/
 
+<<<<<<< HEAD
 # Mac bundle stuff
 *.dmg
 *.app
 
+=======
+>>>>>>> e76b0d627c13fd737111930dae650ddef5f88ca1
 # content below from: https://github.com/github/gitignore/blob/main/Global/macOS.gitignore
 # General
 .DS_Store
