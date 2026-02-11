@@ -1,14 +1,8 @@
 # IncidentTracker
 
-> [!NOTE]
-> Provide a project title in the heading above. Just below this note write a short description of the application you plan to build.
-
 We are working on an incident tracker, a software used to record, update and monitor events or issues as they happen. An admin creates and manages these incident reports and the users can view their status in real time.
 
 ## Tech-stack
-
-> [!NOTE]
-> Write a short description of your tech-stack here in terms of programming language(s) and database engine(s).
 
 FullStack App that uses .NET Web API, REACT, and PostgreSQL.
 
