@@ -8,8 +8,7 @@
 
   <ItemGroup>
     <Folder Include="Common\Exceptions\" />
-    <Folder Include="DTOs\" />
-    <Folder Include="Features\Auth\Register\" />
+    <Folder Include="Common\Utils\" />
   </ItemGroup>
 
   <ItemGroup>

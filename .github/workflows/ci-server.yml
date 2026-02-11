@@ -1,0 +1,58 @@
+name: ci-server
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'server/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'server/**'
+
+jobs:
+  server-build:
+    name: Server Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        working-directory: server
+        run: dotnet restore
+
+      - name: Build
+        working-directory: server
+        run: dotnet build --configuration Release --no-restore
+
+  server-test:
+    name: Server Test
+    runs-on: ubuntu-latest
+    needs: server-build
+
+    #services:
+    #  docker:
+    #    image: docker:dind
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      #- name: Ensure Docker is running
+      #  run: docker ps
+
+      - name: Restore
+        working-directory: server
+        run: dotnet restore
+
+      - name: Run Tests
+        working-directory: server
+        run: dotnet test -c Release
+
+        # add coverage and mutant testing here

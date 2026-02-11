@@ -1,0 +1,52 @@
+name: ci-client
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'client/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'client/**'
+
+jobs:
+  client-checks:
+    name: Client Install and Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: npm install
+        working-directory: client
+        run: npm ci
+
+      - name: Lint
+        working-directory: client
+        run: npm run lint --if-present
+
+  client-build:
+    name: Client Build
+    runs-on: ubuntu-latest
+    needs: client-checks
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - working-directory: client
+        run: npm ci
+
+      - working-directory: client
+        run: npm run build --if-present
