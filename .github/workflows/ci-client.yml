@@ -1,5 +1,8 @@
 name: ci-client
 
+permissions:
+  contents: read
+  
 on:
   push:
     branches: [main, develop]
