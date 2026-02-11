@@ -8,7 +8,6 @@ public static class Program
 
     private static WebApplication BuildApp()
     {
-        Console.WriteLine("TEST");
         var builder = WebApplication.CreateBuilder();
         
         // Load appsettings from Config/Json since they're not in the default location
