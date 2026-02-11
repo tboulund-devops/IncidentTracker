@@ -23,18 +23,15 @@ public sealed class RegisterUserHandler(
 
             hashingUtils.CreatePasswordHash(command.Password, out var passwordHash, out var passwordSalt);
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                FirstName = command.FirstName,
-                LastName = command.LastName,
-                Email = command.Email,
-                PhoneNumber = command.PhoneNumber,
-                PasswordHash = passwordHash,
-                PasswordSalt = passwordSalt,
-                Role = command.Role,
-                CreatedAt = DateTime.UtcNow
-            };
+            var user = User.Create(
+                command.FirstName,
+                command.LastName,
+                command.Email,
+                passwordHash,
+                passwordSalt,
+                command.Role,
+                command.PhoneNumber
+            );
 
             await userRepository.AddAsync(user);
 

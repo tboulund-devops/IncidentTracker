@@ -1,13 +1,29 @@
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
+using Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
 
-public class UserRepository : IUserRepository
+public class UserRepository(MyDbContext dbContext) : IUserRepository
 {
-    public Task<User> AddAsync(User entity)
+    public async Task<User> AddAsync(User entity)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var createdEntity = await dbContext.Users.AddAsync(entity);
+            await dbContext.SaveChangesAsync();
+            return createdEntity.Entity;
+        }
+        catch (DbUpdateException e)
+        {
+            throw new RepositoryException(e.Message, e);
+        }
+        catch (OperationCanceledException e)
+        {
+            throw new RepositoryException(e.Message, e);
+        }
     }
 
     public Task<bool> DeleteAsync(User entity)

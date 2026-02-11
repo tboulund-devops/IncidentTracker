@@ -4,17 +4,17 @@ namespace Domain.Entities;
 
 public sealed record User
 {
-    public Guid Id { get; set; }
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public RoleType Role { get; set; } = RoleType.User;
     
     public required string FirstName { get; set; }
     public required string LastName { get; set; }
     public string PhoneNumber { get; set; } = string.Empty;
-    public DateOnly DateOfBirth { get; set; } = DateOnly.FromDateTime(new  DateTime(1970, 1, 1));
+    public DateOnly DateOfBirth { get; set; } = DateOnly.FromDateTime(new DateTime(1970, 1, 1));
 
     public required string Email { get; set; }
-    public byte[] PasswordHash { get; set; } =  null!;
+    public byte[] PasswordHash { get; set; } = null!;
     public byte[] PasswordSalt { get; set; } = null!;
     public string RefreshTokenHash { get; set; } = string.Empty;
     public DateTime RefreshTokenExpires { get; set; } 
@@ -22,7 +22,28 @@ public sealed record User
     public bool Activated { get; set; } = false;
     public DateTime ExpireDate { get; set; } 
     
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; }
     public bool IsDeleted { get; set; }
+
+    public static User Create(
+        string firstName,
+        string lastName,
+        string email,
+        byte[] passwordHash,
+        byte[] passwordSalt,
+        RoleType role = RoleType.User,
+        string phoneNumber = "")
+    {
+        return new User
+        {
+            FirstName = firstName,
+            LastName = lastName,
+            Email = email,
+            PasswordHash = passwordHash,
+            PasswordSalt = passwordSalt,
+            Role = role,
+            PhoneNumber = phoneNumber
+        };
+    }
 }
