@@ -7,50 +7,16 @@ on:
       - 'client/**'
   pull_request:
     branches: [main, develop]
+    paths:
+      - 'client/**'
 
 jobs:
-  changes:
-    name: Detect Changes
+  build:
+    name: Lint & Build
     runs-on: ubuntu-latest
-    outputs:
-      client: ${{ steps.filter.outputs.client }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            client:
-              - 'client/**'
-
-  client-checks:
-    name: Client Install and Check
-    runs-on: ubuntu-latest
-    needs: changes
-    if: needs.changes.outputs.client == 'true'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: client/package-lock.json
-
-      - name: npm install
+    defaults:
+      run:
         working-directory: client
-        run: npm ci
-
-      - name: Lint
-        working-directory: client
-        run: npm run lint --if-present
-
-  client-build:
-    name: Client Build
-    runs-on: ubuntu-latest
-    needs: [changes, client-checks]
-    if: needs.changes.outputs.client == 'true'
 
     steps:
       - uses: actions/checkout@v4
@@ -60,26 +26,22 @@ jobs:
           cache: 'npm'
           cache-dependency-path: client/package-lock.json
 
-      - working-directory: client
-        run: npm ci
-
-      - working-directory: client
-        run: npm run build --if-present
-
-  ci-client-status:
-    name: CI Client Status
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm run build --if-present   
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    needs: [changes, client-checks, client-build]
-    if: always()
+    defaults:
+      run:
+        working-directory: client
     steps:
-      - name: Check status
-        run: |
-          if [[ "${{ needs.changes.outputs.client }}" == "false" ]]; then
-            echo "No client changes - skipping"
-            exit 0
-          fi
-          if [[ "${{ needs.client-checks.result }}" == "failure" || "${{ needs.client-build.result }}" == "failure" ]]; then
-            echo "CI failed"
-            exit 1
-          fi
-          echo "CI passed"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint --if-present
