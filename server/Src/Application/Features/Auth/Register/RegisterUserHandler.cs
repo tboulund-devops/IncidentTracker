@@ -21,14 +21,13 @@ public sealed class RegisterUserHandler(
             if (existingUser is not null)
                 return Result.Failed("A user with this email already exists.");
 
-            hashingUtils.CreatePasswordHash(command.Password, out var passwordHash, out var passwordSalt);
+            hashingUtils.CreatePasswordHash(command.Password, out var passwordHash);
 
             var user = User.Create(
                 command.FirstName,
                 command.LastName,
                 command.Email,
                 passwordHash,
-                passwordSalt,
                 command.Role,
                 command.PhoneNumber
             );

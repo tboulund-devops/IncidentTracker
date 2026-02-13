@@ -15,7 +15,6 @@ public sealed record User
 
     public required string Email { get; set; }
     public byte[] PasswordHash { get; set; } = null!;
-    public byte[] PasswordSalt { get; set; } = null!;
     public string RefreshTokenHash { get; set; } = string.Empty;
     public DateTime RefreshTokenExpires { get; set; } 
     
@@ -31,7 +30,6 @@ public sealed record User
         string lastName,
         string email,
         byte[] passwordHash,
-        byte[] passwordSalt,
         RoleType role = RoleType.User,
         string phoneNumber = "")
     {
@@ -41,7 +39,6 @@ public sealed record User
             LastName = lastName,
             Email = email,
             PasswordHash = passwordHash,
-            PasswordSalt = passwordSalt,
             Role = role,
             PhoneNumber = phoneNumber
         };

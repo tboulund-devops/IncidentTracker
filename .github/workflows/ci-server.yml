@@ -12,6 +12,9 @@ on:
 
 jobs:
   build:
+    permissions: 
+      contents: read
+      pull-requests: write
     name: Build Server
     runs-on: ubuntu-latest
     defaults:
@@ -27,6 +30,9 @@ jobs:
       - run: dotnet restore
       - run: dotnet build -c Release --no-restore
   test:
+    permissions: 
+      contents: read
+      pull-requests: write
     name: Test Server
     runs-on: ubuntu-latest
     defaults:

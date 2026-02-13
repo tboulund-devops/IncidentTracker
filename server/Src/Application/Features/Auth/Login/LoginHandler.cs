@@ -20,7 +20,7 @@ public sealed class LoginHandler(
         {
             var user = await userRepository.GetByEmailAsync(command.Email);
 
-            if (!hashingUtils.VerifyPasswordHash(command.Password, user.PasswordHash, user.PasswordSalt))
+            if (!hashingUtils.VerifyPasswordHash(command.Password, user.PasswordHash))
                 return Result<LoginResponseDto>.Failure("Invalid credentials.", ResultStatus.Unauthorized);
 
             var token = jwt.GenerateToken(user.Id, user.Email, user.Role.ToString());
