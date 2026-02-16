@@ -10,12 +10,11 @@ public sealed record User
     
     public required string FirstName { get; set; }
     public required string LastName { get; set; }
-    public string PhoneNumber { get; set; } = string.Empty;
     public DateOnly DateOfBirth { get; set; } = DateOnly.FromDateTime(new DateTime(1970, 1, 1));
 
     public required string Email { get; set; }
     public byte[] PasswordHash { get; set; } = null!;
-    public string RefreshTokenHash { get; set; } = string.Empty;
+    public string RefreshToken { get; set; } = string.Empty;
     public DateTime RefreshTokenExpires { get; set; } 
     
     public bool Activated { get; set; } = false;
@@ -30,8 +29,7 @@ public sealed record User
         string lastName,
         string email,
         byte[] passwordHash,
-        RoleType role = RoleType.User,
-        string phoneNumber = "")
+        RoleType role = RoleType.User)
     {
         return new User
         {
@@ -39,8 +37,7 @@ public sealed record User
             LastName = lastName,
             Email = email,
             PasswordHash = passwordHash,
-            Role = role,
-            PhoneNumber = phoneNumber
+            Role = role
         };
     }
 }

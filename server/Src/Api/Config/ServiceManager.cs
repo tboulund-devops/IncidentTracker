@@ -10,11 +10,15 @@ using Domain.Interfaces.Utility;
 using Domain.Settings;
 using Infrastructure.Persistence;
 using Infrastructure.Repositories;
+using Infrastructure.Sse;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using NSwag;
 using NSwag.Generation.Processors.Security;
+using StackExchange.Redis;
+using StackExchange.Redis.Extensions.Core.Configuration;
+using StackExchange.Redis.Extensions.System.Text.Json;
 
 namespace Api.Config;
 
@@ -78,7 +82,7 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
             throw;
         }
         
-        services.AddSingleton<IJwt, Infrastructure.Auth.Jwt>();
+        services.AddScoped<IJwt, Infrastructure.Auth.Jwt>();
 
         // Configure JWT Authentication
         services
@@ -171,13 +175,27 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
     {
         Console.WriteLine("Loading Controllers and Features...");
         
-        services.AddControllers();
+        // Explicitly add controllers from this assembly
+        services.AddControllers()
+            .AddApplicationPart(typeof(ServiceManager).Assembly);
 
         services.AddScoped<LoginHandler>();
         services.AddScoped<RegisterUserHandler>();
         services.AddScoped<IAuthFeature, AuthFeature>();
 
-        services.AddScoped<IHashingUtils, Infrastructure.Utils.HashingUtils>();
+        // Chat feature
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var redisConnectionString = appSettings.DbSettings.RedisConnectionString;
+            var options = ConfigurationOptions.Parse(redisConnectionString);
+            options.AbortOnConnectFail = false;
+            return ConnectionMultiplexer.Connect(options);
+        });
+        services.AddSingleton<ISseConnectionManager, RedisSseConnectionManager>();
+        services.AddScoped<IChatFeature, Application.Features.Chat.ChatFeature>();
+
+        services.AddSingleton<IEnvHelper, Infrastructure.Utils.EnvHelper>();
+        services.AddSingleton<IHashingUtils, Infrastructure.Utils.HashingUtils>();
         Console.WriteLine("Controllers and Features configuration loaded.");
     }
 
@@ -191,7 +209,7 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
 
                 configure.AddSecurity(name: "JWT", swaggerSecurityScheme: new OpenApiSecurityScheme
                 {
-                    Type = OpenApiSecuritySchemeType.ApiKey,
+                    Type = OpenApiSecuritySchemeType.ApiKey, 
                     Name = "Authorization",
                     In = OpenApiSecurityApiKeyLocation.Header,
                     Description = "JWT Authorization header using the Bearer scheme.",
@@ -202,4 +220,5 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
         
         Console.WriteLine("Swagger UI configuration loaded.");
     }
+    
 }

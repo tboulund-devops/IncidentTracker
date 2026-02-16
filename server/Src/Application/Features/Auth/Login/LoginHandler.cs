@@ -23,7 +23,7 @@ public sealed class LoginHandler(
             if (!hashingUtils.VerifyPasswordHash(command.Password, user.PasswordHash))
                 return Result<LoginResponseDto>.Failure("Invalid credentials.", ResultStatus.Unauthorized);
 
-            var token = jwt.GenerateToken(user.Id, user.Email, user.Role.ToString());
+            var token = await jwt.GenerateToken(user.Id);
 
             var dto = new LoginResponseDto
             {
@@ -33,7 +33,7 @@ public sealed class LoginHandler(
 
             return Result<LoginResponseDto>.Success(dto);
         }
-        catch (EntityNotFoundException)
+        catch (EntityNotFoundException e)
         {
             return Result<LoginResponseDto>.Failure("Invalid credentials.", ResultStatus.Unauthorized);
         }

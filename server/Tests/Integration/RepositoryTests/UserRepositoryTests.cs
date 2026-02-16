@@ -7,17 +7,11 @@ using Integration.Fixtures;
 namespace Integration.RepositoryTests;
 
 [Collection("Repository")]
-public class UserRepositoryTests : IAsyncLifetime
+public sealed class UserRepositoryTests(MyDbContextFixture fixture) : IAsyncLifetime
 {
-    private readonly MyDbContextFixture _fixture;
     private MyDbContext _context = null!;
     private UserRepository _userRepository = null!;
-        
-    public UserRepositoryTests(MyDbContextFixture fixture)
-    {
-        _fixture = fixture;
-    }
-    
+
     public async ValueTask DisposeAsync()
     {
         _context.Users.RemoveRange(_context.Users);
@@ -27,7 +21,7 @@ public class UserRepositoryTests : IAsyncLifetime
 
     public ValueTask InitializeAsync()
     {
-        _context = _fixture.CreateDbContext();
+        _context = fixture.CreateDbContext();
         _userRepository = new UserRepository(_context);
         return ValueTask.CompletedTask;
     }
@@ -41,8 +35,8 @@ public class UserRepositoryTests : IAsyncLifetime
             lastName: "Green",
             email: "DonJohnny@wp.pl",
             role: RoleType.User,
-            phoneNumber: "421444222",
-            passwordHash: [1, 2, 3]);
+            passwordHash: [1, 2, 3]
+            );
         
         // Act 
         var result = await _userRepository.AddAsync(user);
@@ -54,5 +48,12 @@ public class UserRepositoryTests : IAsyncLifetime
         var fromDb = await _context.Users.FindAsync([result.Id], TestContext.Current.CancellationToken);
         Assert.NotNull(fromDb);
         Assert.Equal("Johnny", fromDb.FirstName);
+    }
+
+    [Fact]
+    public async Task ShouldSuccessfullyRemoveUserFromRepositoryById()
+    {
+        // Arrange
+        
     }
 }

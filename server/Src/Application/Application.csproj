@@ -9,6 +9,7 @@
   <ItemGroup>
     <Folder Include="Common\Exceptions\" />
     <Folder Include="Common\Utils\" />
+    <Folder Include="Features\Chat\" />
   </ItemGroup>
 
   <ItemGroup>

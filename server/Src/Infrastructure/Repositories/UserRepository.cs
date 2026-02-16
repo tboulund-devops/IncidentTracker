@@ -36,9 +36,11 @@ public class UserRepository(MyDbContext dbContext) : IUserRepository
         throw new NotImplementedException();
     }
 
-    public Task<User> FindByIdAsync(Guid id)
+    public async Task<User> FindByIdAsync(Guid id)
     {
-        throw new NotImplementedException();
+        var user = await dbContext.Users.FindAsync(id);
+
+        return user ?? throw new EntityNotFoundException("User not found");
     }
 
     public Task<IEnumerable<User>> GetAllAsync()
@@ -46,13 +48,43 @@ public class UserRepository(MyDbContext dbContext) : IUserRepository
         throw new NotImplementedException();
     }
 
-    public Task<bool> UpdateAsync(User entity)
+    public async Task<bool> UpdateAsync(User entity)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var existingUser = await FindByIdAsync(entity.Id);
+            
+            entity = entity with { UpdatedAt = DateTime.UtcNow };
+            dbContext.Entry(existingUser).CurrentValues.SetValues(entity);
+            
+            await dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateConcurrencyException e)
+        {
+            throw new RepositoryException("Concurrency conflict while updating user", e);
+        }
+        catch (DbUpdateException e)
+        {
+            throw new RepositoryException($"Failed to update user: {e.Message}", e);
+        }
     }
 
-    public Task<User> GetByEmailAsync(string email)
+    public async Task<User> GetByEmailAsync(string email)
     {
-        throw new NotImplementedException();
+        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
+        return user ?? throw new EntityNotFoundException($"User with email '{email}' not found");
+    }
+
+    public async Task<bool> IsUserExistByEmailAsync(string email)
+    {
+        try
+        {
+            return await dbContext.Users.ContainsAsync(await GetByEmailAsync(email));
+        }
+        catch (EntityNotFoundException e)
+        {
+            return false;
+        }
     }
 }
