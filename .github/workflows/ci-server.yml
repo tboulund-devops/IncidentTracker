@@ -1,0 +1,49 @@
+name: ci-server
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'server/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'server/**'
+
+jobs:
+  build:
+    permissions: 
+      contents: read
+      pull-requests: write
+    name: Build Server
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - run: dotnet restore
+      - run: dotnet build -c Release --no-restore
+  test:
+    permissions: 
+      contents: read
+      pull-requests: write
+    name: Test Server
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - run: dotnet restore
+      - run: dotnet test -c Release --no-build
