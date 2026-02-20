@@ -4,6 +4,7 @@ using Application.DTOs.Responses;
 using Application.Features.Auth.Login;
 using Application.Features.Auth.Register;
 using Domain.Enums;
+using Infrastructure.Utils;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
@@ -15,12 +16,27 @@ public class AuthController(IAuthFeature authFeature) : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginCommand loginRequest)
     {
+        if (User.Identity is { IsAuthenticated: true })
+        {
+            return NoContent();
+        }
+        
         var loginResponseDto = await authFeature.HandleLogin(loginRequest);
+        
+        var cookieOptionsAccess = CookieHelper.CreateAccessTokenCookieOptions(appSettings.Jwt.ExpirationMinutes);
+        var cookieOptionsRefresh = CookieHelper.CreateRefreshTokenCookieOptions(appSettings.Jwt.RefreshTokenDays);
+
+        Response.Cookies.Append("accessToken", loginResponseDto.Dto!.AccessToken, cookieOptionsAccess);
+        Response.Cookies.Append("refreshToken", loginResponseDto.Dto!.RefreshToken, cookieOptionsRefresh);
+        
         return loginResponseDto.Status switch
         {
-            ResultStatus.Unauthorized => Unauthorized(loginResponseDto),
-            ResultStatus.Failure => BadRequest(loginResponseDto),
-            ResultStatus.Success => Ok(loginResponseDto)
+            ResultStatus.Unauthorized => Unauthorized(),
+            ResultStatus.Failure => BadRequest(),
+            ResultStatus.Success => Ok(loginResponseDto.Dto.User),
+            // ResultStatus.Forbidden => BadRequest(loginResponseDto),
+            // ResultStatus.NotFound => BadRequest(loginResponseDto),
+            // _ => throw new ArgumentOutOfRangeException()
         };
     }
 

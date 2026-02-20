@@ -11,11 +11,10 @@ namespace Application.Features.Chat;
 public class ChatFeature(
     IChatMessageRepository messageRepository,
     IChatRoomRepository roomRepository,
-    IUserRepository userRepository,
-    ISseConnectionManager sseConnectionManager
+    IUserRepository userRepository
 ) : IChatFeature
 {
-    public async Task<Result<ChatMessageDto>> SendMessageAsync(Guid userId, SendMessageRequest request)
+    public async Task<Result<ChatMessageDto>> CreateMessageAsync(Guid userId, SendMessageRequest request)
     {
         try
         {
@@ -38,9 +37,6 @@ public class ChatFeature(
                 message.Content,
                 message.CreatedAt
             );
-
-            // Broadcast to all connected clients in the room via SSE
-            await sseConnectionManager.BroadcastToRoomAsync(request.RoomId, messageDto);
 
             return Result<ChatMessageDto>.Success(messageDto);
         }
@@ -84,9 +80,6 @@ public class ChatFeature(
             var room = ChatRoom.Create(request.Name, userId, request.Description);
             await roomRepository.AddAsync(room);
             
-            // Add creator as first member
-            await roomRepository.AddMemberAsync(room.Id, userId);
-
             var roomDto = new ChatRoomDto(
                 room.Id,
                 room.Name,

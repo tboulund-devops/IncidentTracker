@@ -14,71 +14,89 @@ namespace Api.Controllers;
 [Authorize]
 public class ChatController(
     IChatFeature chatFeature,
-    ISseConnectionManager sseConnectionManager,
-    IChatRoomRepository roomRepository
+    IChatRoomRepository roomRepository,
+    ISimpleSse backplane
 ) : ControllerBase
 {
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     /// <summary>
     /// SSE endpoint to subscribe to real-time messages in a chat room.
-    /// </summary>
-    [HttpGet("rooms/{roomId:guid}/stream")]
-    public async Task StreamMessages(Guid roomId, CancellationToken cancellationToken)
+    [HttpGet("stream")]
+    public async Task StreamMessages(CancellationToken cancellationToken)
     {
         var userId = GetUserId();
-        
-        // Verify user is member of the room
-        if (!await roomRepository.IsMemberAsync(roomId, userId))
-        {
-            Response.StatusCode = StatusCodes.Status403Forbidden;
-            return;
-        }
-
-        Response.Headers.Append("Content-Type", "text/event-stream");
-        Response.Headers.Append("Cache-Control", "no-cache");
-        Response.Headers.Append("Connection", "keep-alive");
-        Response.Headers.Append("X-Accel-Buffering", "no"); // Disable nginx buffering
-
-        await Response.Body.FlushAsync(cancellationToken);
-        
-        // Do NOT use AutoFlush - it causes synchronous operations which are disallowed
-        var writer = new StreamWriter(Response.Body);
-
-        // Send initial connection event
-        await writer.WriteAsync($"event: connected\ndata: {{\"roomId\": \"{roomId}\"}}\n\n");
-        await writer.FlushAsync(cancellationToken);
-
-        // Register connection
-        await sseConnectionManager.AddConnectionAsync(roomId, userId, writer, cancellationToken);
+        var (connectionId, channel) = backplane.Connect();
 
         try
         {
-            // Keep connection alive with heartbeat
-            while (!cancellationToken.IsCancellationRequested)
+            // 🔥 Configure SSE headers manually
+            Response.Headers.Append("Content-Type", "text/event-stream");
+            Response.Headers.Append("Cache-Control", "no-cache");
+            Response.Headers.Append("Connection", "keep-alive");
+            Response.Headers.Append("X-Accel-Buffering", "no"); // important for nginx
+
+            await Response.Body.FlushAsync(cancellationToken);
+
+            // Subscribe to rooms
+            var clientRooms = await roomRepository.GetRoomsForUserAsync(userId);
+            foreach (var room in clientRooms)
             {
-                await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
-                await writer.WriteAsync(": heartbeat\n\n");
-                await writer.FlushAsync(cancellationToken);
+                await backplane.AddToGroupAsync(connectionId, room.Id);
+            }
+
+            // Send connected event
+            await WriteSseEvent("connected", 
+                $"Connection: {connectionId}", 
+                cancellationToken);
+
+            // Optional heartbeat
+            _ = Task.Run(async () =>
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    await WriteSseEvent("ping", "keep-alive", cancellationToken);
+                    await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
+                }
+            }, cancellationToken);
+
+            // 🔥 Main channel loop
+            await foreach (var evt in channel.Reader.ReadAllAsync(cancellationToken))
+            {
+                await WriteSseEvent(
+                    evt.Group.ToString()!,
+                    evt.Data.GetRawText(),
+                    cancellationToken);
             }
         }
         catch (OperationCanceledException)
         {
-            // Client disconnected - this is expected
+            // client disconnected — normal
         }
         finally
         {
-            await sseConnectionManager.RemoveConnectionAsync(roomId, userId);
+            await backplane.DisconnectAsync(connectionId);
         }
     }
-
+    
+    private async Task WriteSseEvent(
+        string eventName,
+        string data,
+        CancellationToken cancellationToken)
+    {
+        await Response.WriteAsync($"event: {eventName}\n", cancellationToken);
+        await Response.WriteAsync($"data: {data}\n\n", cancellationToken);
+        await Response.Body.FlushAsync(cancellationToken);
+    }
+    
     /// <summary>
     /// Send a message to a chat room.
     /// </summary>
     [HttpPost("messages")]
     public async Task<IActionResult> SendMessage([FromBody] SendMessageRequest request)
     {
-        var result = await chatFeature.SendMessageAsync(GetUserId(), request);
+        await backplane.SendToGroupAsync(request.RoomId, request);
+        var result = await chatFeature.CreateMessageAsync(GetUserId(), request);
         
         return result.Status switch
         {
@@ -181,7 +199,6 @@ public class ChatController(
     [HttpGet("rooms/{roomId:guid}/connections")]
     public IActionResult GetConnectionCount(Guid roomId)
     {
-        var count = sseConnectionManager.GetConnectionCount(roomId);
-        return Ok(new { roomId, activeConnections = count });
+        throw new NotImplementedException();
     }
 }

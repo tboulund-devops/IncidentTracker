@@ -5,11 +5,13 @@ using Application.DTOs.Responses;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
 using Domain.Interfaces.Utility;
+using Domain.Settings;
 
 namespace Application.Features.Auth.Login;
 
 public sealed class LoginHandler(
     IUserRepository userRepository,
+    JwtSettings jwtSettings,
     IJwt jwt,
     IHashingUtils hashingUtils
     ) : ICommandHandler<LoginCommand, Result<LoginResponseDto>>
@@ -23,12 +25,16 @@ public sealed class LoginHandler(
             if (!hashingUtils.VerifyPasswordHash(command.Password, user.PasswordHash))
                 return Result<LoginResponseDto>.Failure("Invalid credentials.", ResultStatus.Unauthorized);
 
-            var token = await jwt.GenerateToken(user.Id);
-
+            var accessToken = await jwt.GenerateToken(user.Id);
+            var refreshToken = hashingUtils.GenerateRefreshToken();
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpires = DateTime.UtcNow.AddMinutes(jwtSettings.RefreshTokenLifetime);
+            await userRepository.UpdateAsync(user);
             var dto = new LoginResponseDto
             {
-                Token = token,
-                Username = $"{user.FirstName} {user.LastName}"
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                User = user
             };
 
             return Result<LoginResponseDto>.Success(dto);
