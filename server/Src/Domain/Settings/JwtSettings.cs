@@ -9,8 +9,8 @@ public sealed class JwtSettings
     public required string Secret { get; init; }
     public required string Issuer { get; init; }
     public required string Audience { get; init; }
-    public required uint AccessTokenLifetime { get; init; }
-    public required uint RefreshTokenLifetime { get; init; }
+    public required int AccessTokenLifetime { get; init; }
+    public required int RefreshTokenLifetime { get; init; }
 
     private const int MinSecretLenghtBytes = 32; // 256 bits for HS256
     public void Validate()

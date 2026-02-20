@@ -4,6 +4,7 @@ using Application.DTOs.Responses;
 using Application.Features.Auth.Login;
 using Application.Features.Auth.Register;
 using Domain.Enums;
+using Domain.Settings;
 using Infrastructure.Utils;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,7 +12,7 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(IAuthFeature authFeature) : ControllerBase
+public class AuthController(IAuthFeature authFeature, AppSettings appSettings) : ControllerBase
 {
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginCommand loginRequest)
@@ -23,8 +24,8 @@ public class AuthController(IAuthFeature authFeature) : ControllerBase
         
         var loginResponseDto = await authFeature.HandleLogin(loginRequest);
         
-        var cookieOptionsAccess = CookieHelper.CreateAccessTokenCookieOptions(appSettings.Jwt.ExpirationMinutes);
-        var cookieOptionsRefresh = CookieHelper.CreateRefreshTokenCookieOptions(appSettings.Jwt.RefreshTokenDays);
+        var cookieOptionsAccess = CookieHelper.CreateAccessTokenCookieOptions(appSettings.JwtSettings.AccessTokenLifetime);
+        var cookieOptionsRefresh = CookieHelper.CreateRefreshTokenCookieOptions(appSettings.JwtSettings.RefreshTokenLifetime);
 
         Response.Cookies.Append("accessToken", loginResponseDto.Dto!.AccessToken, cookieOptionsAccess);
         Response.Cookies.Append("refreshToken", loginResponseDto.Dto!.RefreshToken, cookieOptionsRefresh);

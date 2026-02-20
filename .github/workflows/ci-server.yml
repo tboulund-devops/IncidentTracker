@@ -47,3 +47,9 @@ jobs:
       
       - run: dotnet restore
       - run: dotnet test -c Release --no-build
+        
+  # sonarqube:
+    # needs: build
+    # name: SonarQube
+    # runs-on: ubuntu-latest
+    # Sonar Cube Stuff
