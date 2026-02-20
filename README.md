@@ -39,8 +39,7 @@ Data is stored in Neon.com in PostgreSQL (WIP)
 *Winter vacation - nothing planned.*
 
 ### Week 8
-**Feature 1:** [...]
-
+**Feature 1:** Frontend UI
 **Feature 2:** [...]
 
 ### Week 9
