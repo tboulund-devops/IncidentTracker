@@ -1,6 +1,7 @@
 using System.Security.Authentication;
 using Application.Common.Interfaces;
 using Application.Common.Results;
+using Application.DTOs.Auth;
 using Application.DTOs.Responses;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
@@ -34,7 +35,11 @@ public sealed class LoginHandler(
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                User = user
+                User = new UserDto
+                {
+                    Email = user.Email,
+                    Username = $"{user.FirstName} {user.LastName}"
+                }
             };
 
             return Result<LoginResponseDto>.Success(dto);
