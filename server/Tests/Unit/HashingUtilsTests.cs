@@ -38,7 +38,7 @@ public class HashingUtilsTests
     public Task ShouldFailPasswordHashVerification()
     {
         // Arrange
-        const string wrongPassword = "wrongPassword";
+        const string wrongPassword = "veryWrongPassword";
         _hashingUtils.CreatePasswordHash("correctPassword", out var hash);
         
         // Act & Assert

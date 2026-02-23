@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    name: SonarQube
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -84,10 +85,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - run: dotnet restore
-      - run: dotnet test -c Release \
-              /p:CollectCoverage=true \
-                /p:CoverletOutputFormat=cobertura \
-                /p:CoverletOutput=TestResults/coverage.xml
+      - run: dotnet test -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=TestResults/coverage.xml
   
   report:
     permissions:
