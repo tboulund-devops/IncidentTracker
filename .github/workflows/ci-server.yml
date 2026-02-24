@@ -117,6 +117,10 @@ jobs:
             /d:sonar.qualitygate.wait=true \
             /d:sonar.qualitygate.timeout=300
 
+      - name: Build Project for SonarQube
+      - uses: actions/checkout@v4
+        run: dotnet build -c Release --no-restore
+
       - name: Complete SonarQube Analysis
         run: |
           dotnet sonarscanner end /d:sonar.token=${{ secrets.SONAR_TOKEN }}
