@@ -103,8 +103,6 @@ jobs:
         run: |
           echo "Contents of current directory:"
           ls -lR
-          echo "Contents of Coverage/Report:"
-          ls -lR Coverage/Report
 
       - name: Install SonarScanner
         run: dotnet tool install -g dotnet-sonarscanner
@@ -115,7 +113,7 @@ jobs:
             /k:"IncidentTracker" \
             /d:sonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             /d:sonar.token=${{ secrets.SONAR_TOKEN }} \
-            /d:sonar.coverageReportPaths="Coverage/Report/SonarQube.xml" \
+            /d:sonar.coverageReportPaths="SonarQube.xml" \
             /d:sonar.qualitygate.wait=true \
             /d:sonar.qualitygate.timeout=300
 
