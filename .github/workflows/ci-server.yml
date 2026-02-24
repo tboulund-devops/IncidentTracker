@@ -95,15 +95,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage
-          path: Coverage
+          path: server/Coverage
 
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
       - name: Generate coverage report for SonarQube
         run: |
-          reportgenerator -reports:"Coverage/**/coverage.cobertura.xml" \
-                          -targetdir:CoverageReport \
+          reportgenerator -reports:"server/Coverage/**/coverage.cobertura.xml" \
+                          -targetdir:server/CoverageReport \
                           -reporttypes:SonarQube
 
   sonarqube:
