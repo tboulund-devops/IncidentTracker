@@ -2,6 +2,7 @@ using System.Security.Authentication;
 using Application.Common.Interfaces;
 using Application.Common.Results;
 using Application.DTOs.Auth;
+using Application.DTOs.Entities;
 using Application.DTOs.Responses;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;

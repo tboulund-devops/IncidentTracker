@@ -74,7 +74,9 @@ public class ChatRoomRepository(MyDbContext dbContext) : IChatRoomRepository
         return await dbContext.ChatRoomMembers
             .Where(m => m.UserId == userId)
             .Include(m => m.Room)
-            .ThenInclude(r => r.Members)
+                .ThenInclude(r => r.Members)
+            .Include(m => m.Room)
+                .ThenInclude(r => r.CreatedBy)
             .Select(m => m.Room)
             .Where(r => !r.IsDeleted)
             .ToListAsync();
@@ -120,5 +122,21 @@ public class ChatRoomRepository(MyDbContext dbContext) : IChatRoomRepository
     {
         return await dbContext.ChatRoomMembers
             .AnyAsync(m => m.RoomId == roomId && m.UserId == userId);
+    }
+
+    public async Task<IEnumerable<ChatRoom>> SearchRoomsByNameAsync(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return Enumerable.Empty<ChatRoom>();
+
+        name = name.Trim();
+
+        return await dbContext.ChatRooms
+            .Where(r => !r.IsDeleted &&
+                        r.Name != null &&
+                        EF.Functions.ILike(r.Name, $"%{name}%")) // 🔥 case-insensitive
+            .Include(r => r.Members)
+            .Include(r => r.CreatedBy)
+            .ToListAsync();
     }
 }

@@ -1,15 +1,13 @@
 import { atom } from 'jotai';
+import { User } from '../types/User';
+import { atomWithStorage } from 'jotai/utils';
 
-export type AuthState = {
-	email?: string;
-	name?: string;
-	isAuthenticated: boolean;
-};
+export type AuthState =
+  | { status: "loading" }
+  | { status: "authenticated"; user: User }
+  | { status: "unauthenticated" }
 
 export const authAtom = atom<AuthState>({
-	email: undefined,
-	name: undefined,
-	isAuthenticated: false,
-});
-
+  status: "loading"
+})
 authAtom.debugLabel = 'Authentication State Atom';

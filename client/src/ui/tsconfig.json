@@ -4,7 +4,7 @@
   "compilerOptions": {
     "composite": true
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/**/*.tsx","**/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "references": [
     { "path": "../core" },
     { "path": "../utils" }

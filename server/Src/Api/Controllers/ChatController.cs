@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Features;
 using Application.Common.Results;
@@ -11,26 +12,35 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/chat")]
-[Authorize]
 public class ChatController(
     IChatFeature chatFeature,
     IChatRoomRepository roomRepository,
     ISimpleSse backplane
-) : ControllerBase
+) : BaseController
 {
-    private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    
 
     /// <summary>
     /// SSE endpoint to subscribe to real-time messages in a chat room.
     [HttpGet("stream")]
     public async Task StreamMessages(CancellationToken cancellationToken)
     {
-        var userId = GetUserId();
-        var (connectionId, channel) = backplane.Connect();
-
+        Guid userId;
         try
         {
-            // 🔥 Configure SSE headers manually
+            userId = GetUserId();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Response.StatusCode = 401;
+            return;
+        }
+        
+        var (connectionId, channel) = backplane.Connect();
+        try
+        {
+            // Configure SSE headers manually
             Response.Headers.Append("Content-Type", "text/event-stream");
             Response.Headers.Append("Cache-Control", "no-cache");
             Response.Headers.Append("Connection", "keep-alive");
@@ -38,18 +48,19 @@ public class ChatController(
 
             await Response.Body.FlushAsync(cancellationToken);
 
+            // Send connected event
+            await WriteSseEvent("connected", 
+                $"Connection: {connectionId}", 
+                cancellationToken);
+            
             // Subscribe to rooms
             var clientRooms = await roomRepository.GetRoomsForUserAsync(userId);
             foreach (var room in clientRooms)
             {
                 await backplane.AddToGroupAsync(connectionId, room.Id);
+                await WriteSseEvent("Joined room", $"joined_room: {room.Id}", cancellationToken);
             }
-
-            // Send connected event
-            await WriteSseEvent("connected", 
-                $"Connection: {connectionId}", 
-                cancellationToken);
-
+            
             // Optional heartbeat
             _ = Task.Run(async () =>
             {
@@ -60,7 +71,7 @@ public class ChatController(
                 }
             }, cancellationToken);
 
-            // 🔥 Main channel loop
+            // Main channel loop
             await foreach (var evt in channel.Reader.ReadAllAsync(cancellationToken))
             {
                 await WriteSseEvent(
@@ -95,15 +106,21 @@ public class ChatController(
     [HttpPost("messages")]
     public async Task<IActionResult> SendMessage([FromBody] SendMessageRequest request)
     {
-        await backplane.SendToGroupAsync(request.RoomId, request);
-        var result = await chatFeature.CreateMessageAsync(GetUserId(), request);
-        
-        return result.Status switch
+        try
         {
-            ResultStatus.Success => Ok(result),
-            ResultStatus.Failure => BadRequest(result),
-            _ => BadRequest(result)
-        };
+            var result = await chatFeature.CreateMessageAsync(GetUserId(), request);
+            await backplane.SendToGroupAsync(request.RoomId, request);
+            return result.Status switch
+            {
+                ResultStatus.Success => Ok(result.Dto),
+                ResultStatus.Failure => BadRequest(result),
+                _ => BadRequest(result)
+            };
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
     }
 
     /// <summary>
@@ -112,18 +129,21 @@ public class ChatController(
     [HttpGet("rooms/{roomId:guid}/messages")]
     public async Task<IActionResult> GetMessages(Guid roomId, [FromQuery] int skip = 0, [FromQuery] int take = 50)
     {
-        var userId = GetUserId();
-        
-        if (!await roomRepository.IsMemberAsync(roomId, userId))
+        Guid userId;
+        try
         {
-            return Forbid("You are not a member of this room");
+            userId = GetUserId();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
         }
 
-        var result = await chatFeature.GetMessagesAsync(roomId, skip, take);
-        
+        var result = await chatFeature.GetMessagesAsync(userId, roomId, skip, take);
         return result.Status switch
         {
             ResultStatus.Success => Ok(result),
+            ResultStatus.Unauthorized => Forbid("You are not a member of this room"),
             ResultStatus.Failure => BadRequest(result),
             _ => BadRequest(result)
         };
@@ -135,29 +155,63 @@ public class ChatController(
     [HttpPost("rooms")]
     public async Task<IActionResult> CreateRoom([FromBody] CreateRoomRequest request)
     {
-        var result = await chatFeature.CreateRoomAsync(GetUserId(), request);
-        
-        return result.Status switch
+        try
         {
-            ResultStatus.Success => CreatedAtAction(nameof(GetMessages), new { roomId = result.Dto!.Id }, result.Message),
-            ResultStatus.Failure => BadRequest(result),
-            _ => BadRequest(result)
-        };
+            var result = await chatFeature.CreateRoomAsync(GetUserId(), request);
+            return result.Status switch
+            {
+                ResultStatus.Failure => BadRequest(result),
+                ResultStatus.Success => CreatedAtAction(nameof(GetMessages), new { roomId = result.Dto!.Id }, result.Message),
+                _ => BadRequest(result)
+            };
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
     }
 
     /// <summary>
-    /// Get all rooms the user is a member of.
+    /// Get all rooms client is member of
     /// </summary>
-    [HttpGet("rooms")]
-    public async Task<IActionResult> GetRooms()
+    [HttpGet("my-rooms")]
+    public async Task<IActionResult> GetMyRooms()
     {
-        var result = await chatFeature.GetUserRoomsAsync(GetUserId());
-        
-        return result.Status switch
+        Guid userId;
+        try
         {
-            ResultStatus.Success => Ok(result),
-            ResultStatus.Failure => BadRequest(result),
-            _ => BadRequest(result)
+            userId = GetUserId();
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            return Unauthorized();
+        }
+        
+        var roomsResult = await chatFeature.GetUserRoomsAsync(userId);
+        return Ok(roomsResult.Dto);
+    }
+
+    /// <summary>
+    /// Search for room by name
+    /// </summary>
+    [HttpGet("rooms/search")]
+    public async Task<IActionResult> SearchForRoom([FromQuery] string name)
+    {
+        try
+        {
+            GetUserId();   
+        }catch(UnauthorizedAccessException e)
+        {
+            return Unauthorized(e.Message);
+        }
+        
+        var roomsResult = await chatFeature.SearchRoomByNameAsync(name);
+
+        return roomsResult.Status switch
+        {
+            ResultStatus.Success => Ok(roomsResult.Dto),
+            ResultStatus.Failure => NotFound("No rooms found"),
+            _ => NoContent()
         };
     }
 
@@ -167,14 +221,20 @@ public class ChatController(
     [HttpPost("rooms/{roomId:guid}/join")]
     public async Task<IActionResult> JoinRoom(Guid roomId)
     {
-        var result = await chatFeature.JoinRoomAsync(GetUserId(), roomId);
-        
-        return result.Status switch
+        try
         {
-            ResultStatus.Success => Ok(result),
-            ResultStatus.Failure => BadRequest(result),
-            _ => BadRequest(result)
-        };
+            var result = await chatFeature.JoinRoomAsync(GetUserId(), roomId);
+            return result.Status switch
+            {
+                ResultStatus.Success => Ok(result),
+                ResultStatus.Failure => BadRequest(result),
+                _ => BadRequest(result)
+            };
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
     }
 
     /// <summary>
@@ -183,14 +243,20 @@ public class ChatController(
     [HttpPost("rooms/{roomId:guid}/leave")]
     public async Task<IActionResult> LeaveRoom(Guid roomId)
     {
-        var result = await chatFeature.LeaveRoomAsync(GetUserId(), roomId);
-        
-        return result.Status switch
+        try
         {
-            ResultStatus.Success => Ok(result),
-            ResultStatus.Failure => BadRequest(result),
-            _ => BadRequest(result)
-        };
+            var result = await chatFeature.LeaveRoomAsync(GetUserId(), roomId);
+            return result.Status switch
+            {
+                ResultStatus.Success => Ok(result),
+                ResultStatus.Failure => BadRequest(result),
+                _ => BadRequest(result)
+            };
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
     }
 
     /// <summary>

@@ -3,6 +3,9 @@ import { api } from '../../utils/api';
 import { useSetAtom, useAtom } from 'jotai';
 import { authAtom, type AuthState } from '../../core/atoms/authAtom';
 import { Navigate } from 'react-router-dom';
+import { User } from '@core/types/User';
+import { RESET } from 'jotai/utils';
+import { authApi } from '@core/controllers/authApi';
 
 const LoginPage: React.FC = () => {
   const [auth, setAuth] = useAtom(authAtom);
@@ -16,26 +19,20 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    try {        
-        const authState = await api('/api/auth/login', {
-            init: {
-            method: 'POST',
-            body: JSON.stringify({ email, password }),
-            },
-        }) as AuthState;
-        // Optionally redirect or update global auth state here
-        setAuth({...authState, isAuthenticated: true});
-        console.log('Login successful:', authState);
-    //   window.location.reload(); // Simple reload to update app state
-    } catch (err: any) {
-        setAuth({isAuthenticated: false}); // Ensure auth state is reset on failure
+    await authApi.login(email, password)
+     .then((user) => {
+        setAuth({ status: "authenticated", user });
+      })
+      .catch((err: any) => {
+        setAuth({ status: "unauthenticated" });
         setError(err.message || 'Login failed');
-    } finally {
+      })
+      .finally(() => {
         setLoading(false);
-    }
+      });
   };
 
-  if (auth.isAuthenticated) {
+  if (auth.status === "authenticated") {
     return <Navigate to="/" replace />;
   }
   return (

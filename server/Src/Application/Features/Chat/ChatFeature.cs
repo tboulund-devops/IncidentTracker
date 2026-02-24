@@ -2,6 +2,7 @@ using Application.Common.Interfaces;
 using Application.Common.Interfaces.Features;
 using Application.Common.Results;
 using Application.DTOs.Chat;
+using Application.DTOs.Entities;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
@@ -24,7 +25,6 @@ public class ChatFeature(
                 return Result<ChatMessageDto>.Failure("You are not a member of this room");
             }
 
-            var user = await userRepository.FindByIdAsync(userId);
             var message = ChatMessage.Create(request.RoomId, userId, request.Content);
             
             await messageRepository.AddAsync(message);
@@ -32,8 +32,7 @@ public class ChatFeature(
             var messageDto = new ChatMessageDto(
                 message.Id,
                 message.RoomId,
-                message.SenderId,
-                $"{user.FirstName} {user.LastName}",
+                UserDto.Map(message.Sender),
                 message.Content,
                 message.CreatedAt
             );
@@ -50,17 +49,18 @@ public class ChatFeature(
         }
     }
 
-    public async Task<Result<IEnumerable<ChatMessageDto>>> GetMessagesAsync(Guid roomId, int skip = 0, int take = 50)
+    public async Task<Result<IEnumerable<ChatMessageDto>>> GetMessagesAsync(Guid userId, Guid roomId, int skip = 0, int take = 50)
     {
         try
         {
+            if(!await roomRepository.IsMemberAsync(roomId, userId)) return Result<IEnumerable<ChatMessageDto>>.Failure("You are not a member of this room", ResultStatus.Unauthorized);
+            
             var messages = await messageRepository.GetByRoomIdAsync(roomId, skip, take);
             
             var messageDtos = messages.Select(m => new ChatMessageDto(
                 m.Id,
                 m.RoomId,
-                m.SenderId,
-                $"{m.Sender.FirstName} {m.Sender.LastName}",
+                UserDto.Map(m.Sender),
                 m.Content,
                 m.CreatedAt
             ));
@@ -78,17 +78,10 @@ public class ChatFeature(
         try
         {
             var room = ChatRoom.Create(request.Name, userId, request.Description);
+            
             await roomRepository.AddAsync(room);
             
-            var roomDto = new ChatRoomDto(
-                room.Id,
-                room.Name,
-                room.Description,
-                room.CreatedAt,
-                1
-            );
-
-            return Result<ChatRoomDto>.Success(roomDto);
+            return Result<ChatRoomDto>.Success(ChatRoomDto.Map(room));
         }
         catch (RepositoryException ex)
         {
@@ -102,15 +95,9 @@ public class ChatFeature(
         {
             var rooms = await roomRepository.GetRoomsForUserAsync(userId);
             
-            var roomDtos = rooms.Select(r => new ChatRoomDto(
-                r.Id,
-                r.Name,
-                r.Description,
-                r.CreatedAt,
-                r.Members.Count
-            ));
-
-            return Result<IEnumerable<ChatRoomDto>>.Success(roomDtos);
+            var roomsDto = rooms.Select(ChatRoomDto.Map);
+            
+            return Result<IEnumerable<ChatRoomDto>>.Success(roomsDto);
         }
         catch (RepositoryException ex)
         {
@@ -161,5 +148,12 @@ public class ChatFeature(
         {
             return Result.Failure($"Failed to leave room: {ex.Message}");
         }
+    }
+
+    public async Task<Result<IEnumerable<ChatRoomDto>>> SearchRoomByNameAsync(string name)
+    {
+        var rooms = await roomRepository.SearchRoomsByNameAsync(name);
+        var roomsDto = rooms.Select(ChatRoomDto.Map).ToList();
+        return roomsDto.Count == 0 ? Result<IEnumerable<ChatRoomDto>>.Failure("No rooms found") : Result<IEnumerable<ChatRoomDto>>.Success(roomsDto);
     }
 }

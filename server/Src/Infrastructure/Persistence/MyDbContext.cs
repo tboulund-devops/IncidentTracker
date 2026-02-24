@@ -41,6 +41,9 @@ public class MyDbContext(DbContextOptions<MyDbContext> options) : DbContext(opti
                 .WithMany()
                 .HasForeignKey(e => e.CreatedById)
                 .OnDelete(DeleteBehavior.Restrict);
+
+                // Make ChatRoom name unique
+                entity.HasIndex(e => e.Name).IsUnique();
         });
 
         modelBuilder.Entity<ChatMessage>(entity =>

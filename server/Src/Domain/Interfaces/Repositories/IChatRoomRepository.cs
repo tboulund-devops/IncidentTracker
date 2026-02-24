@@ -9,4 +9,5 @@ public interface IChatRoomRepository : IBaseRepository<ChatRoom>
     Task<bool> AddMemberAsync(Guid roomId, Guid userId);
     Task<bool> RemoveMemberAsync(Guid roomId, Guid userId);
     Task<bool> IsMemberAsync(Guid roomId, Guid userId);
+    Task<IEnumerable<ChatRoom>> SearchRoomsByNameAsync(string name);
 }

@@ -19,7 +19,6 @@ interface UseSseOptions {
 export function useSse({
   url,
   token,
-  withCredentials = false,
   onMessage,
   onOpen,
   onError,
@@ -32,14 +31,8 @@ export function useSse({
 
     setStatus("connecting");
 
-    const fullUrl =
-      token != null
-        ? `${url}?access_token=${encodeURIComponent(token)}`
-        : url;
-
-    const es = new EventSource(fullUrl, {
-      withCredentials,
-    });
+    // Always include credentials
+    const es = new EventSource(url, { withCredentials: true});
 
     eventSourceRef.current = es;
 
@@ -62,7 +55,7 @@ export function useSse({
         setStatus("closed");
       }
     };
-  }, [url, token, withCredentials, onMessage, onOpen, onError]);
+  }, [url, token, onMessage, onOpen, onError]);
 
   const close = useCallback(() => {
     if (eventSourceRef.current) {
@@ -71,11 +64,6 @@ export function useSse({
       setStatus("closed");
     }
   }, []);
-
-  useEffect(() => {
-    connect();
-    return () => close();
-  }, [connect, close]);
 
   return {
     status,
