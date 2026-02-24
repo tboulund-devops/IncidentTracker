@@ -131,7 +131,12 @@ jobs:
             /d:sonar.qualitygate.wait=true \
             /d:sonar.qualitygate.timeout=300
 
-      - name: Build (optional but recommended for full analysis)
+      - name: Build For SonarQube Analysis
+        run: |
+          # Debug: show current directory and files before build
+          echo "=== Before build: Current directory contents ==="
+          ls -laR .
+          
         run: |
           # Restore + build to ensure all sources are compiled & analyzed
           dotnet restore --no-cache
