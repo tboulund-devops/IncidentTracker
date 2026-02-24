@@ -93,14 +93,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage
-          path: Coverage
 
       - name: Debug downloaded coverage files
         run: |
           echo "Listing Coverage directory:"
-          ls -lR Coverage
+          ls -lR ./server/Coverage
           echo "Showing contents of found coverage.cobertura.xml files:"
-          find Coverage -name "coverage.cobertura.xml" -exec cat {} \; || echo "No coverage files found"
+          find ./server/Coverage -name "coverage.cobertura.xml" -exec cat {} \; || echo "No coverage files found"
             
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
@@ -108,8 +107,8 @@ jobs:
       - name: Generate coverage report for SonarQube
         run: |
           reportgenerator \
-            -reports:"Coverage/**/coverage.cobertura.xml" \
-            -targetdir:CoverageReport \
+            -reports:"./server/Coverage/**/coverage.cobertura.xml" \
+            -targetdir:./server/CoverageReport \
             -reporttypes:SonarQube
 
   sonarqube:
@@ -134,7 +133,7 @@ jobs:
             /k:"IncidentTracker" \
             /d:sonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             /d:sonar.token=${{ secrets.SONAR_TOKEN }} \
-            /d:sonar.coverageReportPaths="CoverageReport/SonarQube.xml" \
+            /d:sonar.coverageReportPaths="./server/CoverageReport/SonarQube.xml" \
             /d:sonar.qualitygate.wait=true \
             /d:sonar.qualitygate.timeout=300
 
