@@ -95,11 +95,12 @@ jobs:
           name: coverage
           path: Coverage
 
+      - name: Debug downloaded coverage files
         run: |
-            echo "Listing Coverage directory:"
-            ls -lR Coverage
-            echo "Showing contents of found coverage.cobertura.xml files:"
-            find Coverage -name "coverage.cobertura.xml" -exec cat {} \; || echo "No coverage files found"
+          echo "Listing Coverage directory:"
+          ls -lR Coverage
+          echo "Showing contents of found coverage.cobertura.xml files:"
+          find Coverage -name "coverage.cobertura.xml" -exec cat {} \; || echo "No coverage files found"
             
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
