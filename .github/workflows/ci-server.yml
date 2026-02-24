@@ -73,8 +73,8 @@ jobs:
         with:
           name: coverage
           path: |
-            Coverage/Unit/coverage.cobertura.xml
-            Coverage/Integration/coverage.cobertura.xml
+            ./server/Coverage/Unit/coverage.cobertura.xml
+            ./server/Coverage/Integration/coverage.cobertura.xml
           # No leading ./server/ — paths are relative to working-directory: server
 
   report:
