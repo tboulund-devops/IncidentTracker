@@ -95,11 +95,7 @@ jobs:
       - name: Display structure of downloaded artifacts
         run: |
           echo "Listing root directory after download:"
-          ls -lR ./
-          echo "Listing server directory after download:"
-          ls -lR ./server
-          echo "Listing Coverage directory after download:"
-          ls -lR ./server/Coverage
+          ls -lR
 
       - name: Debug downloaded coverage files
         run: |
