@@ -172,6 +172,21 @@ public class ChatController(
     }
 
     /// <summary>
+    /// Get all rooms in general
+    /// </summary>
+    ///
+    [HttpGet("get-all-rooms")]
+    public async Task<IActionResult> GetAllRooms()
+    {
+        //var roomsResult = await chatFeature.GetUserRoomsAsync(userId);
+        //return Ok(roomsResult.Dto);
+
+        var allRooms = await roomRepository.GetAllRoomsAsync();
+        return Ok(allRooms);
+
+    }
+
+    /// <summary>
     /// Get all rooms client is member of
     /// </summary>
     [HttpGet("my-rooms")]
