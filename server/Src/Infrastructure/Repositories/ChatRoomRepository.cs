@@ -139,4 +139,11 @@ public class ChatRoomRepository(MyDbContext dbContext) : IChatRoomRepository
             .Include(r => r.CreatedBy)
             .ToListAsync();
     }
+
+    public async Task<IEnumerable<ChatRoom>> GetAllRoomsAsync()
+    {
+        return await dbContext.ChatRooms
+            .Where(r => !r.IsDeleted)
+            .ToListAsync();
+    }
 }
