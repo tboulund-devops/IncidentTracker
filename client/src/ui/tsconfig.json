@@ -1,0 +1,12 @@
+
+{
+  "extends": "../../tsconfig.settings.json",
+  "compilerOptions": {
+    "composite": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "references": [
+    { "path": "../core" },
+    { "path": "../utils" }
+  ]
+}

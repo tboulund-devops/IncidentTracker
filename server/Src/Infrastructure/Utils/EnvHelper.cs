@@ -1,5 +1,6 @@
 using Domain.Exceptions;
 using Domain.Interfaces.Utility;
+using DotNetEnv;
 
 namespace Infrastructure.Utils;
 
@@ -54,5 +55,101 @@ public class EnvHelper : IEnvHelper
         var value = Get<T>(key);
         return value ?? throw new RequireEnvironmentVariableException($"Variable {key} is required!");
     }
-    
+    public static string LoadAndGetConnectionString()
+    {
+        const string connectionStringKey = "Database__PSqlConnectionString";
+        
+        // First check if already set in environment
+        var existing = Environment.GetEnvironmentVariable(connectionStringKey);
+        if (!string.IsNullOrWhiteSpace(existing))
+        {
+            return existing;
+        }
+        
+        // Search for .env file upward from current directory
+        var searchPaths = new[]
+        {
+            Directory.GetCurrentDirectory(),
+            Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..")),
+            Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..")),
+            Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".."))
+        };
+
+        foreach (var basePath in searchPaths)
+        {
+            var envPath = Path.Combine(basePath, ".env");
+            if (File.Exists(envPath))
+            {
+                try
+                {
+                    Env.Load(envPath);
+                    var connectionString = Environment.GetEnvironmentVariable(connectionStringKey);
+                    if (!string.IsNullOrWhiteSpace(connectionString))
+                    {
+                        Console.WriteLine($"[EnvironmentHelper] Loaded {connectionStringKey} from {envPath}");
+                        return connectionString;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[EnvironmentHelper] Failed to load {envPath}: {ex.Message}");
+                }
+            }
+        }
+        
+        // Fallback to local development connection string
+        return Environment.GetEnvironmentVariable(connectionStringKey) 
+               ?? "Host=localhost;Port=5432;Database=Incident_Tracker;Username=postgres;Password=postgres";
+    }
+
+    public static string LoadAndGetConnectionString(bool throwIfNotFound = false)
+    {
+        const string connectionStringKey = "Database__PSqlConnectionString";
+        
+        // First check if already set in environment
+        var existing = Environment.GetEnvironmentVariable(connectionStringKey);
+        if (!string.IsNullOrWhiteSpace(existing))
+        {
+            return existing;
+        }
+        
+        // Search for .env file upward from current directory
+        var searchPaths = new[]
+        {
+            Directory.GetCurrentDirectory(),
+            Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..")),
+            Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..")),
+            Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".."))
+        };
+
+        foreach (var basePath in searchPaths)
+        {
+            var envPath = Path.Combine(basePath, ".env");
+            if (File.Exists(envPath))
+            {
+                try
+                {
+                    Env.Load(envPath);
+                    var connectionString = Environment.GetEnvironmentVariable(connectionStringKey);
+                    if (!string.IsNullOrWhiteSpace(connectionString))
+                    {
+                        Console.WriteLine($"[EnvironmentHelper] Loaded {connectionStringKey} from {envPath}");
+                        return connectionString;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[EnvironmentHelper] Failed to load {envPath}: {ex.Message}");
+                }
+            }
+        }
+        
+        // At the end, instead of silent fallback:
+        if (throwIfNotFound)
+        {
+            throw new ConfigurationFailureException($"Connection string '{connectionStringKey}' not found");
+        }
+        
+        return "Host=localhost;Port=5432;Database=Incident_Tracker;Username=postgres;Password=postgres";
+    }
 }

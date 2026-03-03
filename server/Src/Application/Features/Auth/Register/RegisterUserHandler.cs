@@ -16,11 +16,12 @@ public sealed class RegisterUserHandler(
     {
         try
         {
-            // Check if a user with this email already exists
-            var existingUser = await GetExistingUser(command.Email);
-            if (existingUser is not null)
-                return Result.Failed("A user with this email already exists.");
-
+            if (await userRepository.IsUserExistByEmailAsync(command.Email))
+            {
+                
+                return Result.Failure("Email already in use.");
+            }
+            
             hashingUtils.CreatePasswordHash(command.Password, out var passwordHash);
 
             var user = User.Create(
@@ -28,8 +29,7 @@ public sealed class RegisterUserHandler(
                 command.LastName,
                 command.Email,
                 passwordHash,
-                command.Role,
-                command.PhoneNumber
+                command.Role
             );
 
             await userRepository.AddAsync(user);
@@ -38,19 +38,7 @@ public sealed class RegisterUserHandler(
         }
         catch (RepositoryException e)
         {
-            return Result.Failed(e.Message);
-        }
-    }
-
-    private async Task<User?> GetExistingUser(string email)
-    {
-        try
-        {
-            return await userRepository.GetByEmailAsync(email);
-        }
-        catch (EntityNotFoundException)
-        {
-            return null;
+            return Result.Failure(e.Message);
         }
     }
 }

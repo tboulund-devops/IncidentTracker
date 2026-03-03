@@ -1,15 +1,19 @@
 using System.Security.Authentication;
 using Application.Common.Interfaces;
 using Application.Common.Results;
+using Application.DTOs.Auth;
+using Application.DTOs.Entities;
 using Application.DTOs.Responses;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
 using Domain.Interfaces.Utility;
+using Domain.Settings;
 
 namespace Application.Features.Auth.Login;
 
 public sealed class LoginHandler(
     IUserRepository userRepository,
+    JwtSettings jwtSettings,
     IJwt jwt,
     IHashingUtils hashingUtils
     ) : ICommandHandler<LoginCommand, Result<LoginResponseDto>>
@@ -23,17 +27,25 @@ public sealed class LoginHandler(
             if (!hashingUtils.VerifyPasswordHash(command.Password, user.PasswordHash))
                 return Result<LoginResponseDto>.Failure("Invalid credentials.", ResultStatus.Unauthorized);
 
-            var token = jwt.GenerateToken(user.Id, user.Email, user.Role.ToString());
-
+            var accessToken = await jwt.GenerateToken(user.Id);
+            var refreshToken = hashingUtils.GenerateRefreshToken();
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpires = DateTime.UtcNow.AddMinutes(jwtSettings.RefreshTokenLifetime);
+            await userRepository.UpdateAsync(user);
             var dto = new LoginResponseDto
             {
-                Token = token,
-                Username = $"{user.FirstName} {user.LastName}"
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                User = new UserDto
+                {
+                    Email = user.Email,
+                    Username = $"{user.FirstName} {user.LastName}"
+                }
             };
 
             return Result<LoginResponseDto>.Success(dto);
         }
-        catch (EntityNotFoundException)
+        catch (EntityNotFoundException e)
         {
             return Result<LoginResponseDto>.Failure("Invalid credentials.", ResultStatus.Unauthorized);
         }

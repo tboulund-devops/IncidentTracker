@@ -4,7 +4,7 @@ using Testcontainers.PostgreSql;
 
 namespace Integration.Fixtures;
 
-public class MyDbContextFixture : IAsyncLifetime
+public sealed class MyDbContextFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine")
         .WithDatabase("Incident_Tracker")
