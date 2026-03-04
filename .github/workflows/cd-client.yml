@@ -2,10 +2,10 @@ name: cd-client
 
 on:
   push:
-    branches: [release/*]
+    branches: [ "release/*" ]
     paths:
-      - 'client/**'
-  workflow_dispatch:
+      - "client/**"
+  workflow_dispatch: {}
 
 jobs:
   deploy:
@@ -17,8 +17,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
           cache-dependency-path: client/package-lock.json
 
       - name: Install and Build
@@ -37,17 +37,26 @@ jobs:
 
   client_application_version:
     name: Application Version
-    id: version
     runs-on: ubuntu-latest
     needs: deploy
-    uses: paulhatch/semantic-version@v5.4.0
-    with:
-      bump_each_commit: true
-  
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Application Version
+        id: version
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          bump_each_commit: true
+
   display_version:
     name: Display Version
     runs-on: ubuntu-latest
     needs: client_application_version
+
     steps:
       - name: Display Version
-        run: echo "Generated version is ${{ steps.version.outputs.version }}"
+        run: echo "Generated version is ${{ needs.client_application_version.outputs.version }}"
