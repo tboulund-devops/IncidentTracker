@@ -84,6 +84,28 @@ jobs:
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
+      - name: Create appsettings.json for Integration Tests
+        run: |
+          mkdir -p server/Tests/Integration/Config/Json
+          cat > server/Tests/Integration/Config/Json/appsettings.json << 'EOF'
+          {
+            "Jwt": {
+              "Secret": "${{ secrets.JWT_SECRET }}",
+              "Issuer": "https://localhost:5001",
+              "Audience": "https://localhost:5001",
+              "AccessTokenLifetime": 3600,
+              "RefreshTokenLifetime": 1209600
+            },
+            "Cors": {
+              "AllowedOrigins": []
+            },
+            "Database": {
+              "PSqlConnectionString": "",
+              "PSqlDatabase": "IncidentTracker"
+            }
+          }
+          EOF
+
       - name: Run Unit and Integration Tests with Coverage
         run: |
           echo "Running Unit Tests..."
