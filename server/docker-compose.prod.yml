@@ -17,7 +17,7 @@ services:
     image: ghcr.io/tboulund-devops/incidenttracker-client:staging
     container_name: incidenttracker-client
     ports:
-      - "3000:80"
+      - "3001:80"
     depends_on:
       - api
     restart: unless-stopped
