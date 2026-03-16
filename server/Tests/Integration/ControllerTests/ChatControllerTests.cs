@@ -15,8 +15,7 @@ public sealed class ChatControllerTests(ApiFactory factory)
     [Fact]
     public async Task SendMessage_ShouldReturn401_WhenNotAuthenticated()
     {
-        var response = await _client.PostAsJsonAsync("api/chat/messages",
-            new SendMessageRequest(Guid.NewGuid(), "Test Message"));
+        var response = await _client.PostAsJsonAsync("api/chat/messages", new SendMessageRequest(Guid.NewGuid(), "Test Message"), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -24,15 +23,14 @@ public sealed class ChatControllerTests(ApiFactory factory)
     [Fact]
     public async Task GetMessages_ShouldReturn401_WhenNotAuthenticated()
     {
-        var response = await _client.GetAsync($"api/chat/rooms/{Guid.NewGuid()}/messages");
+        var response = await _client.GetAsync($"api/chat/rooms/{Guid.NewGuid()}/messages", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task CreateRoom_ShouldReturn401_WhenNotAuthenticated()
     {
-        var response = await _client.PostAsJsonAsync("api/chat/rooms",
-            new CreateRoomRequest("Test Room", "Test Description"));
+        var response = await _client.PostAsJsonAsync("api/chat/rooms", new CreateRoomRequest("Test Room", "Test Description"), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -40,30 +38,28 @@ public sealed class ChatControllerTests(ApiFactory factory)
     [Fact]
     public async Task GetAllRooms_ShouldReturn200_WhenCalled()
     {
-        var response = await _client.GetAsync("api/chat/get-all-rooms");
+        var response = await _client.GetAsync("api/chat/get-all-rooms", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
     public async Task GetMyRooms_ShouldReturn401_WhenNotAuthenticated()
     {
-        var response = await _client.GetAsync("api/chat/my-rooms");
+        var response = await _client.GetAsync("api/chat/my-rooms", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task SearchRoom_ShouldReturn401_WhenNotAuthenticated()
     {
-        var response = await _client.GetAsync("api/chat/rooms/search?name=test");
+        var response = await _client.GetAsync("api/chat/rooms/search?name=test", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task EditMessage_ShouldReturn401_WhenNotAuthenticated()
     {
-        var response = await _client.PatchAsJsonAsync(
-            $"api/chat/messages/{Guid.NewGuid()}",
-            new { newContent = "Edited" });
+        var response = await _client.PatchAsJsonAsync($"api/chat/messages/{Guid.NewGuid()}", new { newContent = "Edited" }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -71,7 +67,7 @@ public sealed class ChatControllerTests(ApiFactory factory)
     [Fact]
     public async Task DeleteMessage_ShouldReturn401_WhenNotAuthenticated()
     {
-        var response = await _client.DeleteAsync($"api/chat/messages/{Guid.NewGuid()}");
+        var response = await _client.DeleteAsync($"api/chat/messages/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
@@ -83,9 +79,7 @@ public sealed class ChatControllerTests(ApiFactory factory)
         var client = await AuthHelper.CreateAuthenticatedClientAsync(factory);
         var (roomId, messageId) = await CreateRoomWithMessageAsync(client);
 
-        var response = await client.PatchAsJsonAsync(
-            $"api/chat/messages/{messageId}",
-            new { newContent = "Edited content" });
+        var response = await client.PatchAsJsonAsync($"api/chat/messages/{messageId}", new { newContent = "Edited content" }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -99,11 +93,9 @@ public sealed class ChatControllerTests(ApiFactory factory)
         var (roomId, messageId) = await CreateRoomWithMessageAsync(ownerClient);
 
         // Other user joins so they're authenticated in the room context
-        await otherClient.PostAsync($"api/chat/rooms/{roomId}/join", null);
+        await otherClient.PostAsync($"api/chat/rooms/{roomId}/join", null, TestContext.Current.CancellationToken);
         
-        var response = await otherClient.PatchAsJsonAsync(
-            $"api/chat/messages/{messageId}",
-            new { newContent = "Sneaky edit" });
+        var response = await otherClient.PatchAsJsonAsync($"api/chat/messages/{messageId}", new { newContent = "Sneaky edit" }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -114,11 +106,9 @@ public sealed class ChatControllerTests(ApiFactory factory)
         var client = await AuthHelper.CreateAuthenticatedClientAsync(factory);
         var (_, messageId) = await CreateRoomWithMessageAsync(client);
 
-        await client.DeleteAsync($"api/chat/messages/{messageId}");
+        await client.DeleteAsync($"api/chat/messages/{messageId}", TestContext.Current.CancellationToken);
 
-        var response = await client.PatchAsJsonAsync(
-            $"api/chat/messages/{messageId}",
-            new { newContent = "Editing a deleted message" });
+        var response = await client.PatchAsJsonAsync($"api/chat/messages/{messageId}", new { newContent = "Editing a deleted message" }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -131,7 +121,7 @@ public sealed class ChatControllerTests(ApiFactory factory)
         var client = await AuthHelper.CreateAuthenticatedClientAsync(factory);
         var (_, messageId) = await CreateRoomWithMessageAsync(client);
 
-        var response = await client.DeleteAsync($"api/chat/messages/{messageId}");
+        var response = await client.DeleteAsync($"api/chat/messages/{messageId}", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -144,9 +134,9 @@ public sealed class ChatControllerTests(ApiFactory factory)
 
         var (roomId, messageId) = await CreateRoomWithMessageAsync(ownerClient);
 
-        await otherClient.PostAsync($"api/chat/rooms/{roomId}/join", null);
+        await otherClient.PostAsync($"api/chat/rooms/{roomId}/join", null, TestContext.Current.CancellationToken);
 
-        var response = await otherClient.DeleteAsync($"api/chat/messages/{messageId}");
+        var response = await otherClient.DeleteAsync($"api/chat/messages/{messageId}", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -157,11 +147,11 @@ public sealed class ChatControllerTests(ApiFactory factory)
         var client = await AuthHelper.CreateAuthenticatedClientAsync(factory);
         var (roomId, messageId) = await CreateRoomWithMessageAsync(client);
 
-        await client.DeleteAsync($"api/chat/messages/{messageId}");
+        await client.DeleteAsync($"api/chat/messages/{messageId}", TestContext.Current.CancellationToken);
 
         // After soft delete the message is filtered out of results
-        var messagesResponse = await client.GetAsync($"api/chat/rooms/{roomId}/messages");
-        var envelope = await messagesResponse.Content.ReadFromJsonAsync<ResultEnvelope<IEnumerable<ChatMessageDto>>>();
+        var messagesResponse = await client.GetAsync($"api/chat/rooms/{roomId}/messages", TestContext.Current.CancellationToken);
+        var envelope = await messagesResponse.Content.ReadFromJsonAsync<ResultEnvelope<IEnumerable<ChatMessageDto>>>(cancellationToken: TestContext.Current.CancellationToken);
     
         Assert.DoesNotContain(envelope!.Dto!, m => m.Id == messageId);
     }
