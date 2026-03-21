@@ -3,7 +3,7 @@ name: DevOps Pipeline
 on:
   push:
     branches:
-      - release/contabo
+      - release/db-contabo
   workflow_dispatch: {}
 
 jobs:
