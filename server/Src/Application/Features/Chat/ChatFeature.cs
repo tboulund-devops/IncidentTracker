@@ -32,7 +32,15 @@ public class ChatFeature(
             var message = ChatMessage.Create(request.RoomId, userId, request.Content);
             await messageRepository.AddAsync(message);
 
-            _ = chatNotificationService.NotifyRoomMemberAsync(userId, request.RoomId, message.Id);
+            //_ = chatNotificationService.NotifyRoomMemberAsync(userId, request.RoomId, message.Id);
+            try
+            {
+                await chatNotificationService.NotifyRoomMemberAsync(userId, request.RoomId, message.Id);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Failed to send notification: {e.Message}");
+            }
 
             var messageDto = new ChatMessageDto(
                 message.Id,
@@ -213,5 +221,14 @@ public class ChatFeature(
         {
             return Result.Failure($"Failed to delete message: {e.Message}", ResultStatus.Unauthorized);
         }
+    }
+
+    public async Task<Result<IEnumerable<RoomMemberDto>>> GetRoomMembersAsync(Guid userId, Guid roomId)
+    {
+        if (!await roomRepository.IsMemberAsync(roomId, userId))
+            return Result<IEnumerable<RoomMemberDto>>.Failure("Not a member", ResultStatus.Unauthorized);
+
+        var members = await roomRepository.GetMembersAsync(roomId);
+        return Result<IEnumerable<RoomMemberDto>>.Success(members.Select(RoomMemberDto.Map));
     }
 }

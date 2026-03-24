@@ -21,7 +21,7 @@ public class NotificationController(INotificationFeature notificationFeature) : 
         catch (EntityNotFoundException) { return NotFound("User not found"); }
     }
 
-    [HttpGet("unread")]
+    [HttpGet]
     public async Task<IActionResult> GetUnread()
     {
         try

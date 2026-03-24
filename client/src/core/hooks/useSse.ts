@@ -1,39 +1,30 @@
 import { useRef, useState, useCallback } from "react";
 
-export type SseStatus =
-  | "idle"
-  | "connecting"
-  | "connected"
-  | "error"
-  | "closed";
+export type SseStatus = "idle" | "connecting" | "connected" | "error" | "closed";
+
+type SseEventHandlers = {
+  [eventName: string]: (event: MessageEvent) => void;
+};
 
 interface UseSseOptions {
   url: string;
-  token?: string;
-  withCredentials?: boolean;
-  onMessage?: (event: MessageEvent) => void;
   onOpen?: () => void;
   onError?: (error: Event) => void;
+  events?: SseEventHandlers; // named event handlers
 }
 
-export function useSse({
-  url,
-  token,
-  onMessage,
-  onOpen,
-  onError,
-}: UseSseOptions) {
+export function useSse({ url, onOpen, onError, events = {} }: UseSseOptions) {
   const [status, setStatus] = useState<SseStatus>("idle");
   const eventSourceRef = useRef<EventSource | null>(null);
+  const eventsRef = useRef<SseEventHandlers>(events);
+  eventsRef.current = events;
 
   const connect = useCallback(() => {
     if (eventSourceRef.current) return;
-
+    console.log("connect() called, registered events:", Object.keys(eventsRef.current));
     setStatus("connecting");
 
-    // Always include credentials
-    const es = new EventSource(url, { withCredentials: true});
-
+    const es = new EventSource(url, { withCredentials: true });
     eventSourceRef.current = es;
 
     es.onopen = () => {
@@ -41,21 +32,18 @@ export function useSse({
       onOpen?.();
     };
 
-    es.onmessage = (event) => {
-      onMessage?.(event);
-    };
-
     es.onerror = (error) => {
       setStatus("error");
       onError?.(error);
-
-      // Browser auto-reconnects by default.
-      // If server closed connection permanently:
-      if (es.readyState === EventSource.CLOSED) {
-        setStatus("closed");
-      }
+      if (es.readyState === EventSource.CLOSED) setStatus("closed");
     };
-  }, [url, token, onMessage, onOpen, onError]);
+
+    Object.keys(eventsRef.current).forEach((eventName) => {
+      es.addEventListener(eventName, (event) => {
+        eventsRef.current[eventName]?.(event as MessageEvent);
+      });
+    });
+  }, [url]);
 
   const close = useCallback(() => {
     if (eventSourceRef.current) {
@@ -68,9 +56,7 @@ export function useSse({
   return {
     status,
     close,
-    reconnect: () => {
-      close();
-      connect();
-    },
+    connect,
+    reconnect: () => { close(); connect(); },
   };
 }

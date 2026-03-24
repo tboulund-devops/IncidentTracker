@@ -55,7 +55,6 @@ public class ChatController(
 
             //Notifications
             await backplane.SubscribeUserAsync(connectionId, userId);
-            await WriteSseEvent("connected", $"Connection: {connectionId}", cancellationToken);
             
             // Subscribe to rooms
             var clientRooms = await roomRepository.GetRoomsForUserAsync(userId);
@@ -324,5 +323,22 @@ public class ChatController(
         {
             return Unauthorized();
         }
+    }
+    
+    /// <summary>Get members of a room</summary>
+    [HttpGet("rooms/{roomId:guid}/members")]
+    public async Task<IActionResult> GetRoomMembers(Guid roomId)
+    {
+        Guid userId;
+        try { userId = GetUserId(); }
+        catch (UnauthorizedAccessException) { return Unauthorized(); }
+
+        var result = await chatFeature.GetRoomMembersAsync(userId, roomId);
+        return result.Status switch
+        {
+            ResultStatus.Success => Ok(result.Dto),
+            ResultStatus.Unauthorized => Forbid(),
+            _ => BadRequest(result)
+        };
     }
 }

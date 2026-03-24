@@ -81,7 +81,7 @@ export default function ChatWindow({ roomId, room }: Props) {
                 />
             </section>
 
-            <MembersPanel_seeder />
+            <MembersPanel_seeder roomId={roomId} />
         </div>
     )
 }

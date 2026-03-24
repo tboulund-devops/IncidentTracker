@@ -172,6 +172,7 @@ public class ChatRoomRepository(MyDbContext dbContext) : IChatRoomRepository
     {
         return await dbContext.ChatRoomMembers
             .Where(m => m.RoomId == roomId)
+            .Include(m => m.User)
             .ToListAsync();
     }
 }

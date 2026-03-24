@@ -2,6 +2,7 @@ using System.Text;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Features;
 using Application.Common.Interfaces.Services;
+using Application.Features;
 using Application.Features.Auth;
 using Application.Features.Auth.Login;
 using Application.Features.Auth.Register;
@@ -185,6 +186,8 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
         services.AddScoped<IAuthFeature, AuthFeature>();
         
         //Notification Feature
+        services.AddScoped<INotificationFeature, NotificationFeature>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IChatNotificationService, ChatNotificationService>();
         
         // Chat feature
