@@ -1,4 +1,5 @@
-﻿using Application.Common.Results;
+﻿using Application.Common.Interfaces.Services;
+using Application.Common.Results;
 using Application.DTOs.Chat;
 using Application.Features.Chat;
 using Domain.Entities;
@@ -15,6 +16,7 @@ public class ChatFeatureTests
     private readonly IChatMessageRepository _messageRepository = Substitute.For<IChatMessageRepository>();
     private readonly IChatRoomRepository _roomRepository = Substitute.For<IChatRoomRepository>();
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
+    private readonly IChatNotificationService _chatNotificationService = Substitute.For<IChatNotificationService>();
     private readonly ChatFeature _chatFeature;
 
     private static readonly Guid UserId = Guid.NewGuid();
@@ -22,7 +24,7 @@ public class ChatFeatureTests
 
     public ChatFeatureTests()
     {
-        _chatFeature = new ChatFeature(_messageRepository, _roomRepository, _userRepository);
+        _chatFeature = new ChatFeature(_messageRepository, _roomRepository, _userRepository, _chatNotificationService);
     }
 
     // ── CreateMessageAsync ───────────────────────────────────────────────
